@@ -23,9 +23,7 @@ FLICKER_PROB = 0.8
 FLICKER_AMP_STD = 0.25
 
 
-# =============================
-# (A) Drift / motion model
-# =============================
+# micro & macro motion ---------------------------------------------
 
 # global slow drift state (random walk)
 def macromotion():
@@ -39,23 +37,22 @@ def micromotion():
     dy = np.random.normal(0, 0.25)
     return dx, dy
 
-# =============================
-# (B) Image primitives
-# =============================
+
+
+# 배경 + draw ion + noise ------------------------------------------
 
 def make_background():
     img = np.random.normal(BG_MEAN, BG_STD, (H, W)).astype(np.float32)
-
     lowf = np.random.normal(0, 5, (H, W)).astype(np.float32)
     lowf = cv2.GaussianBlur(lowf, (19,19), 7.0)
     return img + lowf
 
-
+# 이온 이미지를 실제 emccd 처럼 만드는 방법을 chatGPT에게 물어봐서 아래 코드를 추가함
 def add_prnu(img):
     prnu = np.random.normal(1.0, 0.002, img.shape).astype(np.float32)
     return img * prnu
 
-
+# 이온을 자연스러운 원 형태로 만드는 방법을 chatGPT에 물어봐서 틀을 작성한 뒤 수정함
 def draw_bright_ion(img, cx, cy, scale=1.0):
     r = ION_SIZE // 2
     sigma = 2.0 + np.random.normal(0, 0.2)  # PSF blur jitter
@@ -72,7 +69,7 @@ def draw_bright_ion(img, cx, cy, scale=1.0):
 
     return img
 
-
+# 그린 이온을 실제로 화면에 출력할 때 나오는 노이즈를 반영하는 방법을 chatGPT에게 물어보고 아래 코드를 추가함
 def add_read_noise(img):
     return img + np.random.normal(0, 5, img.shape).astype(np.float32)
 
@@ -94,10 +91,8 @@ def add_line_noise(img):
     return img
 
 
-# =============================
-# (C) 20-frame base generation
-# =============================
 
+# 한 이미지에 20개의 노이즈 섞인 frame을 만드는 방법을 ChatGPT에게 물어보고 틀을 작성한 뒤 수정함
 def generate_20_images(base_index):
 
     # nominal ion positions
@@ -160,10 +155,8 @@ def generate_20_images(base_index):
     return state1, state2
 
 
-# =============================
-# (D) Dataset generation
-# =============================
 
+# 200개의 이미지 set과 각각의 20 frame을 생성
 N = 200
 for i in range(N):
     st = generate_20_images(i)
